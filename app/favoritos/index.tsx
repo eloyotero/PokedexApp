@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     borderWidth: 2,
-    borderColor: "#003366",
+    borderColor: "#013c77",
     alignItems: "center",
   },
   sprite: { width: 100, height: 100 },

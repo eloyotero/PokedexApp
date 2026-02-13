@@ -159,7 +159,7 @@ export default function PokedexScreen() {
 
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar por nombre o número..."
+            placeholder="Buscar por nombre "
             placeholderTextColor="#AAA"
             value={search}
             onChangeText={setSearch}

@@ -22,17 +22,16 @@ export default function CombatScreen() {
 
   const [playerMoves, setPlayerMoves] = useState<any[]>([]);
   const [enemyMoves, setEnemyMoves] = useState<any[]>([]);
-
   const [playerHP, setPlayerHP] = useState<number | null>(null);
   const [enemyHP, setEnemyHP] = useState<number | null>(null);
 
   const [log, setLog] = useState("¡Comienza la batalla!");
+  const [playerTeamState, setPlayerTeamState] = useState(playerTeam);
   const [busy, setBusy] = useState(false);
   const [enemyCount, setEnemyCount] = useState(0);
   const [battleOver, setBattleOver] = useState(false);
   const [playerWon, setPlayerWon] = useState(false);
 
-  // Animaciones
   const playerShake = useRef(new Animated.Value(0)).current;
   const enemyShake = useRef(new Animated.Value(0)).current;
 
@@ -70,7 +69,6 @@ export default function CombatScreen() {
 
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-  // Cargar Pokémon jugador
   useEffect(() => setPlayer(playerTeam[playerIndex]), [playerIndex]);
 
   useEffect(() => {
@@ -83,7 +81,6 @@ export default function CombatScreen() {
     }
   }, [player]);
 
-  // Cargar enemigo inicial
   useEffect(() => {
     const run = async () => await loadEnemy();
     run();
