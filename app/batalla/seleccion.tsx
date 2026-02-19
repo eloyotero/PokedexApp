@@ -1,200 +1,103 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  TouchableOpacity
 } from "react-native";
+import { getPokemons } from "../../api/pokemonApi";
+import PokedexLayout from "../../components/PokedexLayout";
 
-type SimplePokemon = {
-  id: number;
-  name: string;
-};
-
-export default function BattleSelectionScreen() {
+export default function SeleccionScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const sizeParam = params.size;
-
-  const sizeValue = Array.isArray(sizeParam) ? sizeParam[0] : sizeParam;
-  const maxSelection = sizeValue ? Number(sizeValue) : 3;
-
-  const [pokemonList, setPokemonList] = useState<SimplePokemon[]>([]);
-  const [selected, setSelected] = useState<SimplePokemon[]>([]);
+  const { maxSelected } = useLocalSearchParams();
+  const limite = Number(maxSelected);
+  const [pokemons, setPokemons] = useState<any[]>([]);
+  const [seleccionados, setSeleccionados] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadPokemon();
+    getPokemons()
+      .then((res) => setPokemons(res.results))
+      .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    setSelected([]);
-  }, [sizeValue]);
+  const manejarSeleccion = (pokemon: any) => {
+    const yaEsta = seleccionados.find((p) => p.name === pokemon.name);
+    if (yaEsta)
+      setSeleccionados(seleccionados.filter((p) => p.name !== pokemon.name));
+    else if (seleccionados.length < limite)
+      setSeleccionados([...seleccionados, pokemon]);
+  };
 
-  async function loadPokemon() {
-    try {
-      const res = await fetch("https://pokeapi.co/api/v2/pokemon?limit=151");
-      const data = await res.json();
-
-      const simple: SimplePokemon[] = data.results.map(
-        (p: any, index: number) => ({
-          id: index + 1,
-          name: p.name,
-        }),
-      );
-
-      setPokemonList(simple);
-    } catch (e) {
-      console.log("Error cargando lista para batalla:", e);
-    }
-  }
-
-  function toggleSelect(p: SimplePokemon) {
-    const exists = selected.find((s) => s.id === p.id);
-
-    if (exists) {
-      setSelected(selected.filter((s) => s.id !== p.id));
-      return;
-    }
-
-    if (selected.length >= maxSelection) return;
-
-    setSelected([...selected, p]);
-  }
-
-  function startBattle() {
-    if (selected.length !== maxSelection) return;
-
-    router.replace({
-      pathname: "/batalla/combat",
-      params: {
-        team: JSON.stringify(selected),
-        size: String(maxSelection),
-      },
-    });
-  }
+  if (loading)
+    return (
+      <PokedexLayout>
+        <ActivityIndicator style={{ flex: 1 }} />
+      </PokedexLayout>
+    );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Elige {maxSelection} Pokémon</Text>
-
-      <FlatList
-        data={pokemonList}
-        keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={{ paddingBottom: 20 }}
-        renderItem={({ item }) => {
-          const isSelected = selected.some((s) => s.id === item.id);
-
-          return (
-            <TouchableOpacity
-              style={[styles.row, isSelected && styles.rowSelected]}
-              onPress={() => toggleSelect(item)}
-            >
-              <Text style={styles.rowText}>
-                #{item.id} {item.name.toUpperCase()}
-              </Text>
-              {isSelected && <Text style={styles.check}>✔</Text>}
-            </TouchableOpacity>
-          );
-        }}
-      />
-
-      <Text style={styles.counter}>
-        {selected.length} / {maxSelection}
+    <PokedexLayout>
+      <Text style={styles.titulo}>
+        ELIGE TU EQUIPO ({seleccionados.length}/{limite})
       </Text>
-
+      <FlatList
+        data={pokemons}
+        keyExtractor={(item) => item.name}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.card,
+              seleccionados.find((p) => p.name === item.name) &&
+                styles.cardActive,
+            ]}
+            onPress={() => manejarSeleccion(item)}
+          >
+            <Text style={styles.pkmName}>{item.name.toUpperCase()}</Text>
+          </TouchableOpacity>
+        )}
+      />
       <TouchableOpacity
         style={[
-          styles.startButton,
-          selected.length !== maxSelection && styles.startButtonDisabled,
+          styles.btn,
+          seleccionados.length !== limite && { backgroundColor: "#ccc" },
         ]}
-        disabled={selected.length !== maxSelection}
-        onPress={startBattle}
+        disabled={seleccionados.length !== limite}
+        onPress={() =>
+          router.push({
+            pathname: "/batalla/combat",
+            params: { equipo: JSON.stringify(seleccionados) },
+          })
+        }
       >
-        <Text style={styles.startText}>Empezar batalla</Text>
+        <Text style={styles.btnTxt}>CONFIRMAR EQUIPO</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.replace("/batalla")}
-      >
-        <Text style={styles.backText}>Volver</Text>
-      </TouchableOpacity>
-    </View>
+    </PokedexLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1A1A1A",
-    paddingTop: 40,
-    paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 20,
-    color: "white",
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "#333",
-    marginBottom: 8,
-  },
-  rowSelected: {
-    backgroundColor: "#4CAF50",
-  },
-  rowText: {
-    color: "white",
-    fontSize: 16,
-  },
-  check: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  counter: {
-    color: "white",
-    textAlign: "center",
-    marginVertical: 10,
-  },
-  startButton: {
-    backgroundColor: "#4A90E2",
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#003366",
-  },
-  startButtonDisabled: {
-    backgroundColor: "#555",
-    borderColor: "#444",
-  },
-  startText: {
-    color: "white",
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  backButton: {
-    backgroundColor: "#555",
-    paddingVertical: 8,
+  titulo: { textAlign: "center", fontSize: 20, fontWeight: "bold", margin: 20 },
+  card: {
+    padding: 15,
+    backgroundColor: "white",
+    marginHorizontal: 20,
+    marginBottom: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#333",
-    marginTop: 15,
-    marginBottom: 20,
+    borderColor: "#ddd",
   },
-  backText: {
-    color: "white",
-    textAlign: "center",
-    fontSize: 14,
-    fontWeight: "bold",
+  cardActive: { borderColor: "#4caf50", backgroundColor: "#e8f5e9" },
+  pkmName: { fontWeight: "bold" },
+  btn: {
+    backgroundColor: "#D32F2F",
+    padding: 20,
+    margin: 20,
+    borderRadius: 10,
+    alignItems: "center",
   },
+  btnTxt: { color: "white", fontWeight: "bold" },
 });

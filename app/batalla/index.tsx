@@ -1,97 +1,121 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import PokedexLayout from "../../components/PokedexLayout";
 
-export default function BattleModeScreen() {
+export default function BattleMenu() {
   const router = useRouter();
-  const [battleSize, setBattleSize] = useState<number>(3);
 
-  function goToSelection() {
-    router.replace(`/batalla/seleccion?size=${battleSize}`);
-  }
+  // Función para ir a la pelea con el modo seleccionado
+  const iniciarBatalla = (modo: number) => {
+    router.push({
+      pathname: "/batalla/combat",
+      params: { modo: modo },
+    });
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Selecciona modo de batalla</Text>
-
-      <View style={styles.modesRow}>
+    <PokedexLayout>
+      {/* CABECERA CON BOTÓN DE VOLVER ARREGLADO */}
+      <View style={styles.header}>
         <TouchableOpacity
-          style={[styles.modeButton, battleSize === 1 && styles.active]}
-          onPress={() => setBattleSize(1)}
+          onPress={() => router.replace("/")} // Usamos replace para asegurar que vuelva al inicio
+          style={styles.backButton}
+          activeOpacity={0.7}
         >
-          <Text style={styles.modeText}>1 vs 1</Text>
+          <Ionicons name="arrow-back" size={32} color="#D32F2F" />
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.modeButton, battleSize === 3 && styles.active]}
-          onPress={() => setBattleSize(3)}
-        >
-          <Text style={styles.modeText}>3 vs 3</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.modeButton, battleSize === 6 && styles.active]}
-          onPress={() => setBattleSize(6)}
-        >
-          <Text style={styles.modeText}>6 vs 6</Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>MODO COMBATE</Text>
       </View>
 
-      <TouchableOpacity style={styles.startButton} onPress={goToSelection}>
-        <Text style={styles.startText}>Continuar</Text>
-      </TouchableOpacity>
-    </View>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.subtitle}>Selecciona el formato de batalla:</Text>
+
+        <TouchableOpacity
+          style={styles.modeCard}
+          onPress={() => iniciarBatalla(1)}
+        >
+          <Ionicons name="person" size={40} color="#D32F2F" />
+          <View style={styles.modeInfo}>
+            <Text style={styles.modeTitle}>Individual (1 vs 1)</Text>
+            <Text style={styles.modeDesc}>Un combate rápido a muerte.</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.modeCard}
+          onPress={() => iniciarBatalla(3)}
+        >
+          <Ionicons name="people" size={40} color="#D32F2F" />
+          <View style={styles.modeInfo}>
+            <Text style={styles.modeTitle}>Equipo (3 vs 3)</Text>
+            <Text style={styles.modeDesc}>
+              Estrategia con un equipo reducido.
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.modeCard}
+          onPress={() => iniciarBatalla(6)}
+        >
+          <Ionicons name="trophy" size={40} color="#D32F2F" />
+          <View style={styles.modeInfo}>
+            <Text style={styles.modeTitle}>Liga (6 vs 6)</Text>
+            <Text style={styles.modeDesc}>
+              El formato clásico de los maestros.
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </ScrollView>
+    </PokedexLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1A1A1A",
-    justifyContent: "center",
+  header: {
+    flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
+    paddingTop: 50, // Un poco más de espacio arriba
+    paddingBottom: 10,
+    zIndex: 10, // Asegura que esté por encima de todo
   },
-  title: {
-    fontSize: 24,
-    color: "white",
-    fontWeight: "bold",
-    marginBottom: 30,
-    textAlign: "center",
+  backButton: {
+    padding: 10, // Área de toque más grande
+    backgroundColor: "#f0f0f0",
+    borderRadius: 50,
   },
-  modesRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 30,
-  },
-  modeButton: {
-    backgroundColor: "#333",
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#555",
-  },
-  active: {
-    borderColor: "#FFD700",
-    backgroundColor: "#555",
-  },
-  modeText: {
-    color: "white",
-    fontWeight: "bold",
+  title: { fontSize: 24, fontWeight: "900", color: "#333", marginLeft: 15 },
+  container: { padding: 20, alignItems: "center" },
+  subtitle: {
     fontSize: 16,
+    color: "#666",
+    marginBottom: 20,
+    fontWeight: "600",
   },
-  startButton: {
-    backgroundColor: "#4A90E2",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#003366",
+  modeCard: {
+    flexDirection: "row",
+    backgroundColor: "white",
+    width: "100%",
+    padding: 20,
+    borderRadius: 20,
+    marginBottom: 15,
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  startText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  modeInfo: { marginLeft: 20, flex: 1 },
+  modeTitle: { fontSize: 18, fontWeight: "bold", color: "#333" },
+  modeDesc: { fontSize: 14, color: "#888" },
 });

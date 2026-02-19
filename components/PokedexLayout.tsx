@@ -1,76 +1,61 @@
-import { StyleSheet, View } from "react-native";
+import { usePathname, useRouter } from "expo-router";
+import React from "react";
+import {
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-export default function PokedexLayout({ children }: any) {
+export default function PokedexLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Si estamos en la raíz (el menú), no mostramos el botón volver
+  const esMenuPrincipal = pathname === "/" || pathname === "/(tabs)";
+
   return (
-    <View style={styles.container}>
-      <View style={styles.pokedex}>
-        <View style={styles.header}>
-          <View style={styles.bigCircle} />
-          <View style={styles.smallCirclesRow}>
-            <View
-              style={[styles.smallCircle, { backgroundColor: "#ff5f52" }]}
-            />
-            <View
-              style={[styles.smallCircle, { backgroundColor: "#ffeb3b" }]}
-            />
-            <View
-              style={[styles.smallCircle, { backgroundColor: "#4caf50" }]}
-            />
-          </View>
-        </View>
+    <SafeAreaView style={styles.contenedorRojo}>
+      <View style={styles.marco}>
+        <View style={styles.pantalla}>
+          {!esMenuPrincipal && (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.btnVolver}
+            >
+              <Text style={styles.txtVolver}>{"< VOLVER"}</Text>
+            </TouchableOpacity>
+          )}
 
-        <View style={styles.screen}>{children}</View>
+          {children}
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  contenedorRojo: { flex: 1, backgroundColor: "#D32F2F" },
+  marco: { flex: 1, padding: 12, borderWidth: 8, borderColor: "#b71c1c" },
+  pantalla: {
     flex: 1,
-    backgroundColor: "#b71c1c",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  pokedex: {
-    width: "92%",
-    height: "92%",
-    backgroundColor: "#d32f2f",
-    borderRadius: 16,
-    padding: 12,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 15,
+    padding: 10,
     borderWidth: 3,
-    borderColor: "#7f0000",
+    borderColor: "#333",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
+  btnVolver: {
+    backgroundColor: "#333",
+    padding: 6,
+    borderRadius: 5,
+    alignSelf: "flex-start",
+    marginBottom: 10,
   },
-  bigCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#bbdefb",
-    borderWidth: 3,
-    borderColor: "#0d47a1",
-    marginRight: 12,
-  },
-  smallCirclesRow: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  smallCircle: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "white",
-  },
-  screen: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 2,
-    borderColor: "#9e9e9e",
-  },
+  txtVolver: { color: "white", fontWeight: "bold", fontSize: 11 },
 });

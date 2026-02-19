@@ -1,27 +1,25 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const KEY = "FAVORITE_POKEMONS";
+const KEY = "@pokedex:favorites";
 
-export async function getFavorites() {
-  const json = await AsyncStorage.getItem(KEY);
-  return json ? JSON.parse(json) : [];
-}
-
-export async function addFavorite(name: string) {
-  const current = await getFavorites();
-  if (!current.includes(name)) {
-    const updated = [...current, name];
-    await AsyncStorage.setItem(KEY, JSON.stringify(updated));
+export const getFavorites = async (): Promise<string[]> => {
+  try {
+    const json = await AsyncStorage.getItem(KEY);
+    return json ? (JSON.parse(json) as string[]) : [];
+  } catch {
+    return [];
   }
-}
+};
 
-export async function removeFavorite(name: string) {
-  const current = await getFavorites();
-  const updated = current.filter((n: string) => n !== name);
-  await AsyncStorage.setItem(KEY, JSON.stringify(updated));
-}
+export const addFavorite = async (name: string): Promise<void> => {
+  const list = await getFavorites();
+  if (!list.includes(name)) {
+    list.push(name);
+    await AsyncStorage.setItem(KEY, JSON.stringify(list));
+  }
+};
 
-export async function isFavorite(name: string) {
-  const current = await getFavorites();
-  return current.includes(name);
-}
+export const removeFavorite = async (name: string): Promise<void> => {
+  const list = (await getFavorites()).filter((n) => n !== name);
+  await AsyncStorage.setItem(KEY, JSON.stringify(list));
+};

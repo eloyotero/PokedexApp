@@ -1,52 +1,46 @@
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import PokedexLayout from "../../components/PokedexLayout";
 
 export default function DerrotaScreen() {
   const router = useRouter();
-
   return (
-    <View style={styles.container}>
-      <View style={styles.box}>
-        <Text style={styles.title}>DERROTA...</Text>
-        <Text style={styles.text}>Te has quedado sin Pokémon</Text>
-
+    <PokedexLayout>
+      <View style={styles.container}>
+        <View style={styles.box}>
+          <Text style={styles.txt}>DERROTA</Text>
+          <Text style={styles.sub}>Entrenador Eloy fue derrotado</Text>
+        </View>
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push("/")}
+          style={styles.btn}
+          onPress={() => router.replace("/batalla")}
         >
-          <Text style={styles.buttonText}>Volver al menú</Text>
+          <Text style={styles.btnTxt}>REINTENTAR</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </PokedexLayout>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#FFEBEE",
   },
   box: {
-    backgroundColor: "black",
-    borderWidth: 4,
-    borderColor: "white",
-    padding: 30,
-    borderRadius: 10,
-    width: "85%",
+    backgroundColor: "#D32F2F",
+    padding: 40,
+    borderRadius: 20,
     alignItems: "center",
   },
-  title: { color: "white", fontSize: 28, fontWeight: "bold", marginBottom: 20 },
-  text: { color: "white", fontSize: 18, marginBottom: 10 },
-  button: {
-    marginTop: 20,
-    backgroundColor: "#4A90E2",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#003366",
+  txt: { color: "white", fontSize: 40, fontWeight: "bold" },
+  sub: { color: "white", marginTop: 10, fontSize: 18 },
+  btn: {
+    marginTop: 30,
+    padding: 15,
+    backgroundColor: "#333",
+    borderRadius: 10,
   },
-  buttonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  btnTxt: { color: "white", fontWeight: "bold" },
 });

@@ -1,288 +1,293 @@
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import { isFavorite, toggleFavorite } from "../../utils/favorites";
+import PokedexLayout from "../../components/PokedexLayout";
 
-export default function PokemonDetail() {
+const KEY = "FAVORITE_POKEMONS";
+const TYPE_COLORS: any = {
+  fire: "#FF4422",
+  water: "#3399FF",
+  grass: "#77CC55",
+  electric: "#FFCC33",
+  ice: "#66CCFF",
+  fighting: "#BB5544",
+  poison: "#AA5599",
+  ground: "#E2C56A",
+  flying: "#8899FF",
+  psychic: "#FF5599",
+  bug: "#AABB22",
+  rock: "#BBAA66",
+  ghost: "#6666BB",
+  dragon: "#7766EE",
+  steel: "#AAAABB",
+  fairy: "#EE99EE",
+  normal: "#AAAA99",
+  default: "#4caf50",
+};
+
+// CACHÉ MEJORADA: Guarda el objeto completo incluyendo evoluciones
+const fullCache: any = {};
+
+export default function DetallePokemon() {
   const { name } = useLocalSearchParams();
   const router = useRouter();
 
-  const [pokemon, setPokemon] = useState<any>(null);
-  const [fav, setFav] = useState(false);
+  // Intentamos sacar de la caché inmediatamente antes de renderizar
+  const cachedData = fullCache[name as string];
+
+  const [pokemon, setPokemon] = useState<any>(cachedData?.pokemon || null);
+  const [evolutions, setEvolutions] = useState<any[]>(
+    cachedData?.evolutions || [],
+  );
+  const [isFav, setIsFav] = useState(false);
+  const [loading, setLoading] = useState(!cachedData);
+
+  const mainColor = pokemon
+    ? TYPE_COLORS[pokemon.types[0].type.name] || TYPE_COLORS.default
+    : TYPE_COLORS.default;
 
   useEffect(() => {
-    loadPokemon();
+    if (name) fetchData();
   }, [name]);
 
-  async function loadPokemon() {
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
-    const data = await res.json();
-    setPokemon(data);
+  const fetchData = async () => {
+    try {
+      // Si no está en caché, cargamos todo
+      const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+      const pkmData = await res.json();
 
-    const f = await isFavorite(data);
-    setFav(f);
-  }
+      const speciesRes = await fetch(pkmData.species.url);
+      const speciesData = await speciesRes.json();
+      const evoRes = await fetch(speciesData.evolution_chain.url);
+      const evoData = await evoRes.json();
 
-  async function toggleFavPress() {
-    const nowFav = await toggleFavorite(pokemon);
-    setFav(nowFav);
-  }
+      let chain = [];
+      let current = evoData.chain;
+      while (current) {
+        const id = current.species.url.split("/").filter(Boolean).pop();
+        chain.push({
+          name: current.species.name,
+          image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`,
+        });
+        current = current.evolves_to[0];
+      }
 
-  if (!pokemon) {
+      // Guardamos TODO en la caché para la próxima vez
+      fullCache[name as string] = { pokemon: pkmData, evolutions: chain };
+
+      setPokemon(pkmData);
+      setEvolutions(chain);
+
+      const favsJson = await AsyncStorage.getItem(KEY);
+      setIsFav(favsJson ? JSON.parse(favsJson).includes(pkmData.name) : false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const añadirAFavoritos = async () => {
+    if (isFav) return;
+    const json = await AsyncStorage.getItem(KEY);
+    let favs = json ? JSON.parse(json) : [];
+    favs.push(pokemon.name);
+    await AsyncStorage.setItem(KEY, JSON.stringify(favs));
+    setIsFav(true);
+  };
+
+  // Solo mostramos cargando si NO tenemos nada en caché
+  if (loading && !pokemon)
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={{ fontSize: 20 }}>Cargando...</Text>
-      </View>
+      <PokedexLayout>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#D32F2F" />
+        </View>
+      </PokedexLayout>
     );
-  }
-
-  const mainType = pokemon.types[0].type.name;
-  const bgColor = typeBackground(mainType);
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: bgColor }]}>
-      <Text style={styles.title}>
-        #{pokemon.id} {pokemon.name.toUpperCase()}
-      </Text>
-
-      <View style={styles.imagesRow}>
-        <Image
-          source={{ uri: pokemon.sprites.front_default }}
-          style={styles.sprite}
-        />
-        <Image
-          source={{ uri: pokemon.sprites.back_default }}
-          style={styles.sprite}
-        />
-      </View>
-
-      <View style={styles.typesRow}>
-        {pokemon.types.map((t: any, i: number) => (
-          <View
-            key={i}
-            style={[
-              styles.typeChip,
-              { backgroundColor: typeColor(t.type.name) },
-            ]}
-          >
-            <Text style={styles.typeText}>{t.type.name}</Text>
-          </View>
-        ))}
-      </View>
-
-      <Text style={styles.section}>Stats</Text>
-
-      {pokemon.stats.map((s: any, i: number) => {
-        const value = s.base_stat;
-        const percent = Math.min(value / 150, 1);
-        const barColor =
-          value < 50 ? "#FF5252" : value < 90 ? "#FFCA28" : "#66BB6A";
-
-        return (
-          <View key={i} style={{ marginBottom: 12 }}>
-            <Text style={styles.statLabel}>{s.stat.name.toUpperCase()}</Text>
-
-            <View style={styles.statBarBackground}>
-              <View
-                style={[
-                  styles.statBarFill,
-                  {
-                    width: `${percent * 100}%`,
-                    backgroundColor: barColor,
-                  },
-                ]}
+    <PokedexLayout>
+      {/* Fondo muy clarito para no oscurecer las barras */}
+      <View style={{ flex: 1, backgroundColor: mainColor + "10" }}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.pkmName, { color: mainColor }]}>
+              {pokemon.name}
+            </Text>
+            <Image
+              source={{
+                uri: pokemon.sprites.other["official-artwork"].front_default,
+              }}
+              style={styles.pkmImage}
+            />
+            <TouchableOpacity
+              style={[
+                styles.btnFav,
+                { backgroundColor: isFav ? "#666" : mainColor },
+              ]}
+              onPress={añadirAFavoritos}
+              disabled={isFav}
+            >
+              <Ionicons
+                name={isFav ? "heart" : "heart-outline"}
+                size={26}
+                color="white"
               />
-            </View>
-
-            <Text style={styles.statValue}>{value}</Text>
+              <Text style={styles.btnText}>
+                {isFav ? " CAPTURADO" : " AÑADIR A FAVORITOS"}
+              </Text>
+            </TouchableOpacity>
           </View>
-        );
-      })}
 
-      <TouchableOpacity style={styles.favButton} onPress={toggleFavPress}>
-        <Text style={styles.favText}>
-          {fav ? "⭐ Quitar de favoritos" : "☆ Añadir a favoritos"}
-        </Text>
-      </TouchableOpacity>
+          {/* ESTADÍSTICAS MÁS COLORIDAS Y GRANDES */}
+          <View style={styles.statsBox}>
+            <Text style={[styles.sectionTitle, { color: mainColor }]}>
+              ESTADÍSTICAS BASE
+            </Text>
+            {pokemon.stats.map((s: any) => {
+              // Lógica de color vibrante: si el stat es muy alto, brilla más
+              const statColor =
+                s.base_stat > 100
+                  ? mainColor
+                  : s.base_stat > 60
+                    ? mainColor + "CC"
+                    : mainColor + "88";
+              return (
+                <View key={s.stat.name} style={styles.statRow}>
+                  <Text style={styles.statLabel}>
+                    {s.stat.name.replace("-", " ")}
+                  </Text>
+                  <View style={styles.barContainer}>
+                    <View
+                      style={[
+                        styles.barFill,
+                        {
+                          width: `${Math.min((s.base_stat / 150) * 100, 100)}%`,
+                          backgroundColor: statColor,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.statValue, { color: mainColor }]}>
+                    {s.base_stat}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
 
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backText}>Volver</Text>
-      </TouchableOpacity>
-    </ScrollView>
+          <View style={styles.evoBox}>
+            <Text style={styles.sectionTitle}>LÍNEA EVOLUTIVA</Text>
+            {evolutions.map((evo, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.evoItem}
+                onPress={() => router.push(`/detalle/${evo.name}`)}
+              >
+                <Image source={{ uri: evo.image }} style={styles.evoImg} />
+                <Text
+                  style={[
+                    styles.evoName,
+                    { color: evo.name === pokemon.name ? mainColor : "#333" },
+                  ]}
+                >
+                  {evo.name.toUpperCase()}
+                </Text>
+                {i < evolutions.length - 1 && (
+                  <Ionicons
+                    name="chevron-down"
+                    size={30}
+                    color={mainColor + "40"}
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+    </PokedexLayout>
   );
 }
 
-function typeColor(type: string) {
-  const colors: any = {
-    fire: "#F08030",
-    water: "#6890F0",
-    grass: "#78C850",
-    electric: "#F8D030",
-    ice: "#98D8D8",
-    fighting: "#C03028",
-    poison: "#A040A0",
-    ground: "#E0C068",
-    flying: "#A890F0",
-    psychic: "#F85888",
-    bug: "#A8B820",
-    rock: "#B8A038",
-    ghost: "#705898",
-    dragon: "#7038F8",
-    dark: "#705848",
-    steel: "#B8B8D0",
-    fairy: "#EE99AC",
-    normal: "#A8A878",
-  };
-  return colors[type] || "#AAA";
-}
-
-function typeBackground(type: string) {
-  const backgrounds: any = {
-    fire: "#FF8A65",
-    water: "#4FC3F7",
-    grass: "#81C784",
-    electric: "#FFF176",
-    ice: "#80DEEA",
-    fighting: "#E57373",
-    poison: "#BA68C8",
-    ground: "#D7CCC8",
-    flying: "#B39DDB",
-    psychic: "#F48FB1",
-    bug: "#DCE775",
-    rock: "#BCAAA4",
-    ghost: "#9575CD",
-    dragon: "#9575CD",
-    dark: "#8D6E63",
-    steel: "#B0BEC5",
-    fairy: "#F8BBD0",
-    normal: "#E0E0E0",
-  };
-  return backgrounds[type] || "#DDD";
-}
-
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "#1A1A1A",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  container: {
-    flex: 1,
-    paddingTop: 40,
-    paddingHorizontal: 20,
-  },
-
-  title: {
-    fontSize: 30,
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  cardHeader: { alignItems: "center", paddingVertical: 30 },
+  pkmName: {
+    fontSize: 40,
     fontWeight: "900",
-    color: "white",
-    textAlign: "center",
-    marginBottom: 20,
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 3,
-  },
-
-  imagesRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 20,
-    marginBottom: 20,
-  },
-
-  sprite: { width: 120, height: 120 },
-
-  typesRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-    marginBottom: 25,
-  },
-
-  typeChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-
-  typeText: {
-    color: "white",
-    fontWeight: "bold",
     textTransform: "capitalize",
+    letterSpacing: 2,
   },
+  pkmImage: { width: 250, height: 250 },
+  btnFav: {
+    flexDirection: "row",
+    marginTop: 25,
+    paddingVertical: 15,
+    paddingHorizontal: 35,
+    borderRadius: 35,
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+  },
+  btnText: { color: "white", fontWeight: "900", fontSize: 16, marginLeft: 10 },
 
-  section: {
+  statsBox: {
+    backgroundColor: "white",
+    borderRadius: 35,
+    padding: 30,
+    marginHorizontal: 15,
+    marginBottom: 20,
+    elevation: 10,
+  },
+  sectionTitle: {
     fontSize: 22,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 15,
+    fontWeight: "900",
+    marginBottom: 25,
+    textAlign: "center",
+    letterSpacing: 1,
   },
-
+  statRow: { flexDirection: "row", alignItems: "center", marginVertical: 10 },
   statLabel: {
-    color: "white",
+    flex: 2.5,
+    textTransform: "capitalize",
     fontSize: 14,
-    marginBottom: 3,
+    color: "#444",
+    fontWeight: "800",
   },
-
-  statBarBackground: {
-    width: "100%",
-    height: 12,
-    backgroundColor: "#333",
-    borderRadius: 6,
+  barContainer: {
+    flex: 4,
+    height: 16,
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
     overflow: "hidden",
+    marginHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#EEE",
   },
+  barFill: { height: "100%", borderRadius: 8 },
+  statValue: { flex: 1, textAlign: "right", fontWeight: "900", fontSize: 18 },
 
-  statBarFill: {
-    height: "100%",
-    borderRadius: 6,
-  },
-
-  statValue: {
-    color: "white",
-    fontSize: 14,
-    marginTop: 2,
-    textAlign: "right",
-    fontWeight: "bold",
-  },
-
-  favButton: {
-    backgroundColor: "#FFD700",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 20,
-    borderWidth: 2,
-    borderColor: "#B8860B",
-  },
-
-  favText: {
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  backButton: {
-    backgroundColor: "#4A90E2",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 20,
-    borderWidth: 2,
-    borderColor: "#003366",
+  evoBox: {
+    backgroundColor: "white",
+    borderRadius: 35,
+    padding: 30,
+    marginHorizontal: 15,
     marginBottom: 40,
+    elevation: 10,
   },
-
-  backText: {
-    textAlign: "center",
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  evoItem: { alignItems: "center", marginVertical: 15 },
+  evoImg: { width: 120, height: 120 },
+  evoName: { fontWeight: "900", marginTop: 10, fontSize: 18, letterSpacing: 1 },
 });
