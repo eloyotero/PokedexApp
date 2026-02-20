@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import PokedexLayout from "../../components/PokedexLayout";
 
@@ -35,14 +35,12 @@ const TYPE_COLORS: any = {
   default: "#4caf50",
 };
 
-// CACHÉ MEJORADA: Guarda el objeto completo incluyendo evoluciones
 const fullCache: any = {};
 
 export default function DetallePokemon() {
   const { name } = useLocalSearchParams();
   const router = useRouter();
 
-  // Intentamos sacar de la caché inmediatamente antes de renderizar
   const cachedData = fullCache[name as string];
 
   const [pokemon, setPokemon] = useState<any>(cachedData?.pokemon || null);
@@ -62,7 +60,6 @@ export default function DetallePokemon() {
 
   const fetchData = async () => {
     try {
-      // Si no está en caché, cargamos todo
       const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
       const pkmData = await res.json();
 
@@ -82,7 +79,6 @@ export default function DetallePokemon() {
         current = current.evolves_to[0];
       }
 
-      // Guardamos TODO en la caché para la próxima vez
       fullCache[name as string] = { pokemon: pkmData, evolutions: chain };
 
       setPokemon(pkmData);
@@ -106,7 +102,6 @@ export default function DetallePokemon() {
     setIsFav(true);
   };
 
-  // Solo mostramos cargando si NO tenemos nada en caché
   if (loading && !pokemon)
     return (
       <PokedexLayout>
@@ -118,7 +113,6 @@ export default function DetallePokemon() {
 
   return (
     <PokedexLayout>
-      {/* Fondo muy clarito para no oscurecer las barras */}
       <View style={{ flex: 1, backgroundColor: mainColor + "10" }}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.cardHeader}>
@@ -150,13 +144,11 @@ export default function DetallePokemon() {
             </TouchableOpacity>
           </View>
 
-          {/* ESTADÍSTICAS MÁS COLORIDAS Y GRANDES */}
           <View style={styles.statsBox}>
             <Text style={[styles.sectionTitle, { color: mainColor }]}>
               ESTADÍSTICAS BASE
             </Text>
             {pokemon.stats.map((s: any) => {
-              // Lógica de color vibrante: si el stat es muy alto, brilla más
               const statColor =
                 s.base_stat > 100
                   ? mainColor

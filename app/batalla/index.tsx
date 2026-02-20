@@ -13,7 +13,6 @@ import PokedexLayout from "../../components/PokedexLayout";
 export default function BattleMenu() {
   const router = useRouter();
 
-  // Función para ir a la pelea con el modo seleccionado
   const iniciarBatalla = (modo: number) => {
     router.push({
       pathname: "/batalla/combat",
@@ -23,10 +22,9 @@ export default function BattleMenu() {
 
   return (
     <PokedexLayout>
-      {/* CABECERA CON BOTÓN DE VOLVER ARREGLADO */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.replace("/")} // Usamos replace para asegurar que vuelva al inicio
+          onPress={() => router.replace("/")}
           style={styles.backButton}
           activeOpacity={0.7}
         >

@@ -16,7 +16,6 @@ export default function PokedexLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Si estamos en la raíz (el menú), no mostramos el botón volver
   const esMenuPrincipal = pathname === "/" || pathname === "/(tabs)";
 
   return (

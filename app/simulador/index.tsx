@@ -6,7 +6,6 @@ import PokedexLayout from "../../components/PokedexLayout";
 export default function SimuladorScreen() {
   const router = useRouter();
 
-  // Función para ir al combate con modo aleatorio
   const irACombate = (cantidad: number) => {
     router.push({
       pathname: "/batalla/combat",

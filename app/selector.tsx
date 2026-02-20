@@ -39,7 +39,6 @@ export default function SelectorScreen() {
 
   const handleConfirm = () => {
     if (selectedIds.length === maxSelected) {
-      // Mandamos al combate. Usamos el primer seleccionado para la pelea actual.
       router.push({
         pathname: "/batalla/combat",
         params: {

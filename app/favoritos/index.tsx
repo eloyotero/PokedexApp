@@ -12,7 +12,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import PokedexLayout from "../../components/PokedexLayout";
 
@@ -65,7 +65,6 @@ export default function FavoritesScreen() {
         return;
       }
 
-      // 1. Cargamos todos los datos en paralelo
       const pkmDataList = await Promise.all(
         favNames.map(async (name) => {
           const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
@@ -76,11 +75,10 @@ export default function FavoritesScreen() {
         }),
       );
 
-      // 2. Agrupamos por ID de cadena evolutiva
       const evolutionGroups: any = {};
       pkmDataList.forEach(({ pkm, species }) => {
         const chainUrl = species.evolution_chain.url;
-        // Usamos la URL de la cadena como clave para agrupar familias
+
         if (!evolutionGroups[chainUrl]) evolutionGroups[chainUrl] = [];
 
         evolutionGroups[chainUrl].push({
@@ -91,8 +89,6 @@ export default function FavoritesScreen() {
         });
       });
 
-      // 3. ORDENAR: Primero ordenamos los Pokémon dentro de cada familia,
-      // y luego ordenamos las familias por el ID del primer Pokémon de cada una.
       const sortedGroups = Object.values(evolutionGroups)
         .map((family: any) => family.sort((a: any, b: any) => a.id - b.id))
         .sort((groupA: any, groupB: any) => groupA[0].id - groupB[0].id);
@@ -107,7 +103,6 @@ export default function FavoritesScreen() {
   };
 
   const eliminarDeFavoritos = async (name: string) => {
-    // Eliminación instantánea en la interfaz
     const nuevasFamilias = favoriteGroups
       .map((family) => family.filter((p: any) => p.name !== name))
       .filter((family) => family.length > 0);
@@ -115,7 +110,6 @@ export default function FavoritesScreen() {
     setFavoriteGroups(nuevasFamilias);
     setFilteredGroups(nuevasFamilias);
 
-    // Persistencia en segundo plano
     const json = await AsyncStorage.getItem(KEY);
     let favs = json ? JSON.parse(json) : [];
     favs = favs.filter((n: string) => n !== name);
